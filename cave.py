@@ -100,12 +100,11 @@ class DQNCave:
             0: do nothing
             1: move up
         """
-        # update player position
+        # update positions
         self.player.update(action)
         self.walls.update()
         self.tail.update(self.player)
 
-        # collision detection
         self.reward = 0
         self.terminal = False
 
@@ -113,6 +112,7 @@ class DQNCave:
         if self.time_limit and self.past_time > 10000:
             self.terminal = True
 
+        # collision detection
         wall = self.walls.list[self.player.x]
         if self.player.y <= wall.y - wall.size / 2 or self.player.y >= wall.y + wall.size / 2:
             self.reward = -1

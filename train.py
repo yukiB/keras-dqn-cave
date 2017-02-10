@@ -34,6 +34,7 @@ if __name__ == "__main__":
         # reset
         frame = 0
         loss = 0.0
+        do_replay_count = 0
         Q_max = 0.0
         env.reset()
         state_t_1, reward_t, terminal, past_time = env.observe()
@@ -63,7 +64,10 @@ if __name__ == "__main__":
 
             # experience replay
             if start_replay:
-                agent.experience_replay()
+                do_replay_count += 1
+                if do_replay_count % 3 == 0 or reward_t == -1:
+                    agent.experience_replay()
+                    do_replay_count = 0
 
             # update target network
             if total_frame % 3000 == 0 and start_replay:
