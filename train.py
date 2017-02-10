@@ -22,14 +22,14 @@ if __name__ == "__main__":
     # environment, agent
     env = DQNCave()
     agent = DQNAgent(env.enable_actions, env.name, env.size)
+    agent.init_model()
     if args.load:
         agent.load_model(args.model_path)
-    else:
-        agent.init_model()
-    # variables
-    win = 0
 
-    for e in range(n_epochs):
+    # variables
+
+    e = 0
+    while e < n_epochs:
         # reset
         frame = 0
         loss = 0.0
@@ -54,23 +54,27 @@ if __name__ == "__main__":
             state_t_1, reward_t, terminal, past_time = env.observe()
 
             # store experience
-            if frame % 3 == 0:
+            if frame % 3 == 0 or reward_t == -1:
                 new_S = copy.copy(S)
                 new_S.append(state_t_1)
-                agent.store_experience(S, action_t, reward_t, new_S, terminal)
+                start_replay = agent.store_experience(S, action_t, reward_t, new_S, terminal)
 
             # experience replay
-            agent.experience_replay()
+            if start_replay:
+                agent.experience_replay()
 
             # for log
             frame += 1
             loss += agent.current_loss
             Q_max += np.max(agent.Q_values(S))
 
-        print("EPOCH: {:03d}/{:03d} | SCORE: {:03d} | LOSS: {:.4f} | Q_MAX: {:.4f}".format(
-            e, n_epochs - 1, past_time, loss / frame, Q_max / frame))
+        if start_replay:
+            print("EPOCH: {:03d}/{:03d} | SCORE: {:03d} | LOSS: {:.4f} | Q_MAX: {:.4f}".format(
+                e, n_epochs - 1, past_time, loss / frame, Q_max / frame))
         if e > 0 and e % 100 == 0:
             agent.save_model(e)
+        if start_replay:
+            e += 1
 
     # save model
     agent.save_model()
