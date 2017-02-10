@@ -66,11 +66,12 @@ if __name__ == "__main__":
             if start_replay:
                 do_replay_count += 1
                 if do_replay_count % 3 == 0 or reward_t == -1:
+                    agent.update_exploration(e)
                     agent.experience_replay()
                     do_replay_count = 0
 
             # update target network
-            if total_frame % 3000 == 0 and start_replay:
+            if total_frame % 1000 == 0 and start_replay:
                 agent.update_target_model()
 
             # for log

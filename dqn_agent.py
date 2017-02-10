@@ -16,7 +16,10 @@ f_model = './models'
 
 model_filename = 'dqn_model.yaml'
 weights_filename = 'dqn_model_weights.hdf5'
-    
+
+INITIAL_EXPLORATION = 1.0
+FINAL_EXPLORATION = 0.1
+EXPLORATION_STEPS = 1000000
 
 
 class DQNAgent:
@@ -33,11 +36,12 @@ class DQNAgent:
         self.n_actions = len(self.enable_actions)
         self.minibatch_size = 32
         self.replay_memory_size = 10000
-        self.learning_rate = 0.00001
+        self.learning_rate = 0.000025
         self.momentum = 0.95
         self.min_grad = 0.01
         self.discount_factor = 0.9
-        self.exploration = 0.1
+        self.exploration = INITIAL_EXPLORATION
+        self.exploration_step = (INITIAL_EXPLORATION - FINAL_EXPLORATION) / EXPLORATION_STEPS
         self.model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
         self.model_name = "{}.ckpt".format(self.environment_name)
 
@@ -91,6 +95,13 @@ class DQNAgent:
         self.sess.run(self.update_target_network)
 
 
+    def update_exploration(self, num):
+        if self.exploration > FINAL_EXPLORATION:
+            self.exploration -= self.exploration_step * num
+            if self.exploration < FINAL_EXPLORATION:
+                self.exploration = FINAL_EXPLORATION
+
+
     def update_target_model(self):
         self.sess.run(self.update_target_network)
     
@@ -122,7 +133,7 @@ class DQNAgent:
         error = tf.abs(y - q_value)
         quadratic_part = tf.clip_by_value(error, 0.0, 1.0)
         linear_part = error - quadratic_part
-        loss = tf.reduce_mean(0.5 * tf.square(quadratic_part) + linear_part)
+        loss = tf.reduce_sum(0.5 * tf.square(quadratic_part) + linear_part)
 
         optimizer = tf.train.RMSPropOptimizer(self.learning_rate, momentum=self.momentum, epsilon=self.min_grad)
         training = optimizer.minimize(loss, var_list=q_network_weights)
@@ -130,13 +141,18 @@ class DQNAgent:
         return a, y, loss, training
     
 
-    def Q_values(self, states):
+    def Q_values(self, states, isTarget=False):
         # Q(state, action) of all actions
-        res = self.q_network.predict(np.array([states]))
-        #self.q_values.eval(feed_dict={self.s: [np.float32(state / 255.0)]})
+        if not isTarget:
+            #res = self.q_network.predict(np.array([states]))
+            res = self.q_values.eval(feed_dict={self.s: [states]})
+        else:
+            #res = self.target_network.predict(np.array([states]))
+            res = self.target_q_values.eval(feed_dict={self.st: [states]})
         return res[0]
 
     def select_action(self, states, epsilon):
+
         if np.random.rand() <= epsilon:
             # random
             return np.random.choice(self.enable_actions)
@@ -164,16 +180,20 @@ class DQNAgent:
             state_j, action_j, reward_j, state_j_1, terminal = self.D[j]
             action_j_index = self.enable_actions.index(action_j)
 
-            y_j = self.Q_values(state_j)
+            #y_j = self.Q_values(state_j, isTarget=True)
 
+            #if terminal:
+            #    y_j[action_j_index] = reward_j
+            #else:
+            #    # reward_j + gamma * max_action' Q(state', action') alpha(learing rate) = 1
+            #    y_j[action_j_index] = reward_j + self.discount_factor * np.max(self.Q_values(state_j_1))  # NOQA
             if terminal:
-                y_j[action_j_index] = reward_j
+                y_j = reward_j
             else:
-                # reward_j + gamma * max_action' Q(state', action') alpha(learing rate) = 1
-                y_j[action_j_index] = reward_j + self.discount_factor * np.max(self.Q_values(state_j_1))  # NOQA
+                y_j = reward_j + self.discount_factor * np.max(self.Q_values(state_j_1, isTarget=True))
 
             state_minibatch.append(state_j)
-            y_minibatch.append(y_j[action_j_index])
+            y_minibatch.append(y_j)
             action_minibatch.append(action_j_index)
 
         # training
