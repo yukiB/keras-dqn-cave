@@ -83,7 +83,7 @@ class DQNAgent:
         # Sessionの構築
         self.sess = tf.InteractiveSession()
         
-        self.saver = tf.train.Saver(self.q_network_weights)
+        self.saver = tf.train.Saver(q_network_weights)
         
         self.sess.run(tf.global_variables_initializer())
 
