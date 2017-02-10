@@ -91,7 +91,7 @@ class DQNAgent:
         self.sess.run(self.update_target_network)
 
 
-    def update_target_model():
+    def update_target_model(self):
         self.sess.run(self.update_target_network)    
     
 

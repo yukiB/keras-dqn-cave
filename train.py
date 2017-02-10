@@ -66,7 +66,7 @@ if __name__ == "__main__":
                 agent.experience_replay()
 
             if total_frame % 3000 == 0:
-                agent.update_target_model(total_frame)
+                agent.update_target_model()
 
             # for log
             frame += 1
