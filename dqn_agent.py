@@ -92,7 +92,7 @@ class DQNAgent:
 
 
     def update_target_model(self):
-        self.sess.run(self.update_target_network)    
+        self.sess.run(self.update_target_network)
     
 
     def create_model(self):
@@ -198,7 +198,7 @@ class DQNAgent:
 
         
     def load_model(self, model_path=None):
-        checkpoint = tf.train.get_checkpoint_state('./model/test')
+        checkpoint = tf.train.get_checkpoint_state('./models/test')
         if checkpoint and checkpoint.model_checkpoint_path:
             self.saver.restore(self.sess, checkpoint.model_checkpoint_path)
             print('Successfully loaded: ' + checkpoint.model_checkpoint_path)
@@ -214,7 +214,7 @@ class DQNAgent:
         #print('save weights')
         #self.q_network.save_weights(os.path.join(f_model, weight_name))
 
-        save_path = self.saver.save(self.sess, './model/test', global_step=(num))        
+        save_path = self.saver.save(self.sess, './models/test', global_step=(num))        
 
     def end_session(self):
         KTF.set_session(self.old_session)
