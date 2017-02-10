@@ -65,7 +65,8 @@ if __name__ == "__main__":
             if start_replay:
                 agent.experience_replay()
 
-            if total_frame % 3000 == 0:
+            # update target network
+            if total_frame % 3000 == 0 and start_replay:
                 agent.update_target_model()
 
             # for log
