@@ -83,6 +83,7 @@ class DQNAgent:
         # Sessionの構築
         self.sess = tf.InteractiveSession()
         
+        self.saver = tf.train.Saver(self.q_network_weights)
         
         self.sess.run(tf.global_variables_initializer())
 
@@ -202,7 +203,7 @@ class DQNAgent:
             print('Training new network...')
         
 
-    def save_model(self, num=None, t=None):
+    def save_model(self, num=None):
         #yaml_string = self.q_network.to_yaml()
         #model_name = 'dqn_model{0}.yaml'.format((str(num) if num else ''))
         #weight_name = 'dqn_model_weights{0}.hdf5'.format((str(num) if num else ''))
@@ -210,7 +211,7 @@ class DQNAgent:
         #print('save weights')
         #self.q_network.save_weights(os.path.join(f_model, weight_name))
 
-        save_path = self.saver.save(self.sess, './model/test', global_step=(t))        
+        save_path = self.saver.save(self.sess, './model/test', global_step=(num))        
 
     def end_session(self):
         KTF.set_session(self.old_session)
