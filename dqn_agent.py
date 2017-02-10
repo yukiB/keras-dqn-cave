@@ -90,7 +90,10 @@ class DQNAgent:
         # Target Networkの初期化
         self.sess.run(self.update_target_network)
 
-        
+
+    def update_target_model():
+        self.sess.run(self.update_target_network)    
+    
 
     def create_model(self):
 

@@ -29,6 +29,7 @@ if __name__ == "__main__":
     # variables
 
     e = 0
+    total_frame = 0
     while e < n_epochs:
         # reset
         frame = 0
@@ -54,6 +55,7 @@ if __name__ == "__main__":
             state_t_1, reward_t, terminal, past_time = env.observe()
 
             # store experience
+            start_replay = False
             if frame % 3 == 0 or reward_t == -1:
                 new_S = copy.copy(S)
                 new_S.append(state_t_1)
@@ -63,8 +65,12 @@ if __name__ == "__main__":
             if start_replay:
                 agent.experience_replay()
 
+            if total_frame % 3000 == 0:
+                agent.update_target_model(total_frame)
+
             # for log
             frame += 1
+            total_frame += 1
             loss += agent.current_loss
             Q_max += np.max(agent.Q_values(S))
 
