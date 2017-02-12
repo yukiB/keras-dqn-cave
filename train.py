@@ -48,7 +48,7 @@ if __name__ == "__main__":
                 # execute action in environment
             if frame % 3 == 0:
                 #action_t = agent.select_action(S, agent.exploration)
-                action_t = agent.select_action(state_t, agent.exploration)
+                action_t = agent.select_action([state_t], agent.exploration)
             env.execute_action(action_t)
 
             # observe environment
