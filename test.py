@@ -2,6 +2,7 @@ from __future__ import division
 
 import argparse
 import os
+import sys
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -24,7 +25,7 @@ def init():
 
 def gray2rgb(val):
     if val == 0.5:
-        return np.array([0.0, 1.0, 0.0])
+        return np.array([0.0, 0.8, 1.0])
     elif val >= 0.8:
         return np.array([1.0, 0.0, 0.0])
     else:
@@ -38,10 +39,12 @@ def animate(step):
 
     if terminal:
         env.reset()
-        S = deque(maxlen=state_num)
+        #S = deque(maxlen=state_num)
+        sys.stderr.write('\r\033[K')
         print("SCORE: {0:03d}".format(past_time))
     else:
         state_t = state_t_1
+        sys.stderr.write('\r\033[K SCORE: {0:03d}'.format(past_time))
         #if len(S) == 0:
         #    [S.append(state_t) for i in range(state_num)]
         #else:

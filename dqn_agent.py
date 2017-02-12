@@ -76,6 +76,10 @@ class DQNAgent:
         self.model.compile(loss=loss_func,
                            optimizer="rmsprop",
                            metrics=['accuracy'])
+        #self.model.compile(loss=loss_func,
+        #                   optimizer="rmspropgraves",
+        #                   momentum=0.9,
+        #                   metrics=['accuracy'])
         self.target_model = copy.copy(self.model)
 
 

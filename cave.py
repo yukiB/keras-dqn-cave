@@ -4,6 +4,26 @@ import copy
 import random
 
 
+class Block:
+
+    def __init__(self, row, col, size):
+        self.row = row
+        self.col = col
+        self.size = size
+
+    def update(self):
+        self.col -= 1
+
+    def hit(self, x, y):
+        if self.col + self.size[0] >= x >= self.col:
+            if self.row + self.size[1] >= y >= self.row:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+
 class Walls:
 
     def __init__(self, n_rows, n_cols):
@@ -90,6 +110,10 @@ class DQNCave:
         self.state_update_interval = 4
         self.past_time = 0
         self.time_limit = time_limit
+        self.block_interval = 20
+        self.block_past_time = 0
+        self.blocks = []
+        self.block_size = [2, 6]
 
         # variables
         self.reset()
@@ -112,11 +136,27 @@ class DQNCave:
         if self.time_limit and self.past_time > 10000:
             self.terminal = True
 
+        [b.update() for b in self.blocks]
+
+        self.block_past_time += 1
+        if self.block_interval < self.block_past_time:
+            self.block_past_time = 0
+            w = self.walls.list[-1]
+            y = np.random.randint(int(w.y - w.size/2),
+                              int(w.y + w.size/2 - self.block_size[1]))
+            self.blocks.append(Block(y, self.screen_n_cols, self.block_size))
+
+        # check collision
+        hits = [b.hit(self.player.x, self.player.y) for b in self.blocks]
+        
         # collision detection
         wall = self.walls.list[self.player.x]
-        if self.player.y <= wall.y - wall.size / 2 or self.player.y >= wall.y + wall.size / 2:
+        if (self.player.y <= wall.y - wall.size / 2 or self.player.y >= wall.y + wall.size / 2) or sum(hits) > 0:
             self.reward = -1
             self.terminal = True
+
+        if len(self.blocks) > 0 and self.blocks[0].col < 0:
+            del self.blocks[0]
 
     def draw(self):
         def _draw_player(player, diff_y):
@@ -126,6 +166,10 @@ class DQNCave:
             self.screen[int(y - size/2 - diff_y):int(y + size/2 - diff_y),
                         int(i - size/2):int(i + size/2)] = 0.8
 
+        def _draw_block(block, diff_y):
+            self.screen[int(block.row - diff_y):int(block.row+block.size[1] - diff_y),
+                        block.col:block.col+block.size[0]] = 0.5
+            
         def _draw_wall(i, w, diff_y):
             pos_y = w.y - diff_y
             min_y = int(pos_y - w.size/2)
@@ -144,6 +188,9 @@ class DQNCave:
         
         # draw player
         _draw_player(self.player, diff_y)
+
+        # draw block
+        [_draw_block(b, diff_y) for b in self.blocks]
 
         # draw wall
         [_draw_wall(i, w, diff_y) for i,w in enumerate(self.walls.list)]
