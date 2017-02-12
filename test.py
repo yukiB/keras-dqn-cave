@@ -3,6 +3,8 @@ from __future__ import division
 import argparse
 import os
 import sys
+from multiprocessing import Pool
+import multiprocessing as multi
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -12,10 +14,6 @@ from collections import deque
 from cave import DQNCave
 from dqn_agent import DQNAgent
 
-import matplotlib.animation as animation
-import matplotlib.pyplot as plt
-
-state_num = 4
 
 def init():
     img.set_array(state_t_1)
@@ -31,10 +29,14 @@ def gray2rgb(val):
     else:
         return np.array([0.0, 0.0, 0.0])
 
-
+    
+def onkey(event):
+    global action_t
+    if event.key == 'q':
+        sys.exit()
 
 def animate(step):
-    global past_time, S
+    global past_time
     global state_t_1, reward_t, terminal
 
     if terminal:
@@ -54,7 +56,7 @@ def animate(step):
         if reward_t == 1:
             n_catched += 1
         # execute action in environment
-        action_t = agent.select_action(state_t, 0.0)
+        action_t = agent.select_action([state_t], 0.0)
         env.execute_action(action_t)
 
     # observe environment
@@ -86,11 +88,11 @@ if __name__ == "__main__":
 
     # variables
     n_catched = 0
-    state_t_1, reward_t, terminal = env.observe()
-    S = deque(maxlen=state_num)
+    state_t_1, reward_t, terminal, past_time = env.observe()
     # animate
-    fig = plt.figure(figsize=(env.screen_n_rows / 2, env.screen_n_cols / 2))
+    fig = plt.figure(figsize=(env.screen_n_rows / 10, env.screen_n_cols / 10))
     fig.canvas.set_window_title("{}-{}".format(env.name, agent.name))
+    cid = fig.canvas.mpl_connect('key_press_event', onkey)
     img = plt.imshow(state_t_1, interpolation="none", cmap="gray")
     ani = animation.FuncAnimation(fig, animate, init_func=init, interval=(1000 / env.frame_rate), blit=True)
 

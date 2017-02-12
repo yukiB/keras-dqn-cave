@@ -63,6 +63,8 @@ def onkey(event):
     global action_t
     if event.key == ' ':
         action_t = 1
+    elif event.key == 'q':
+        sys.exit()
 
 def offkey(event):
     global action_t
@@ -87,7 +89,7 @@ if __name__ == "__main__":
     action_t = 0
     
     # animate
-    fig = plt.figure(figsize=(env.screen_n_rows / 8, env.screen_n_cols / 8))
+    fig = plt.figure(figsize=(env.screen_n_rows / 10, env.screen_n_cols / 10))
     fig.canvas.set_window_title("{}".format(env.name))
     cid = fig.canvas.mpl_connect('key_press_event', onkey)
     cid = fig.canvas.mpl_connect('key_release_event', offkey)

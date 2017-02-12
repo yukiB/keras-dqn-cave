@@ -139,7 +139,7 @@ class DQNCave:
         [b.update() for b in self.blocks]
 
         self.block_past_time += 1
-        if self.block_interval < self.block_past_time:
+        if self.block_interval < self.block_past_time and  self.past_time > 100:
             self.block_past_time = 0
             w = self.walls.list[-1]
             y = np.random.randint(int(w.y - w.size/2),
@@ -211,6 +211,10 @@ class DQNCave:
 
         # reset tail
         self.tail = Tail(self.player_x, self.player)
+
+        # reset block
+        self.blocks = []
+        self.block_past_time = 0
 
         # reset other variables
         self.reward = 0
