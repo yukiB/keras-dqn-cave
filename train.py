@@ -3,8 +3,6 @@ import numpy as np
 import argparse
 from cave import DQNCave
 from dqn_agent import DQNAgent
-from collections import deque
-import copy
 
 
 if __name__ == "__main__":
@@ -38,18 +36,19 @@ if __name__ == "__main__":
         Q_max = 0.0
         env.reset()
         state_t_1, reward_t, terminal, past_time = env.observe()
-        S = deque(maxlen=state_num)
+        #S = deque(maxlen=state_num)
 
         while not terminal:
             state_t = state_t_1
 
-            if len(S) == 0:
-                [S.append(state_t) for i in range(state_num)]
-            else:
-                S.append(state_t)
+            #if len(S) == 0:
+            #    [S.append(state_t) for i in range(state_num)]
+            #else:
+            #    S.append(state_t)
                 # execute action in environment
             if frame % 3 == 0:
-                action_t = agent.select_action(S, agent.exploration)
+                #action_t = agent.select_action(S, agent.exploration)
+                action_t = agent.select_action(state_t, agent.exploration)
             env.execute_action(action_t)
 
             # observe environment
@@ -58,9 +57,10 @@ if __name__ == "__main__":
             # store experience
             start_replay = False
             if frame % 3 == 0 or reward_t == -1:
-                new_S = copy.copy(S)
-                new_S.append(state_t_1)
-                start_replay = agent.store_experience(S, action_t, reward_t, new_S, terminal)
+                #new_S = copy.copy(S)
+                #new_S.append(state_t_1)
+                #start_replay = agent.store_experience(S, action_t, reward_t, new_S, terminal)
+                start_replay = agent.store_experience([state_t], action_t, reward_t, [state_t_1], terminal)
 
             # experience replay
             if start_replay:
@@ -78,7 +78,7 @@ if __name__ == "__main__":
             frame += 1
             total_frame += 1
             loss += agent.current_loss
-            Q_max += np.max(agent.Q_values(S))
+            Q_max += np.max(agent.Q_values([state_t]))
 
         if start_replay:
             print("EPOCH: {:03d}/{:03d} | SCORE: {:03d} | LOSS: {:.4f} | Q_MAX: {:.4f}".format(

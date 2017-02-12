@@ -10,6 +10,7 @@ from keras.models import model_from_yaml
 import keras.callbacks
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf
+from util import clone_model
 
 f_log = './log'
 f_model = './models'
@@ -22,23 +23,29 @@ FINAL_EXPLORATION = 0.1
 EXPLORATION_STEPS = 1000000
 
 
+def loss_func(y_val, y_pred):
+    error = tf.abs(y_pred - y_val)
+    quadratic_part = tf.clip_by_value(error, 0.0, 1.0)
+    linear_part = error - quadratic_part
+    loss = tf.reduce_sum(0.5 * tf.square(quadratic_part) + linear_part)
+    return loss
+        
+
 class DQNAgent:
     """
     Multi Layer Perceptron with Experience Replay
     """
 
-    def __init__(self, enable_actions, env_name, env_size):
+    def __init__(self, enable_actions, environment_name, env_size):
         # parameters
         self.name = os.path.splitext(os.path.basename(__file__))[0]
-        self.environment_name = env_name
-        self.env_size = env_size
+        self.environment_name = environment_name
         self.enable_actions = enable_actions
         self.n_actions = len(self.enable_actions)
         self.minibatch_size = 32
-        self.replay_memory_size = 10000
-        self.learning_rate = 0.000025
-        self.momentum = 0.95
-        self.min_grad = 0.01
+        self.env_size = env_size
+        self.replay_memory_size = 5000
+        self.learning_rate = 0.000001
         self.discount_factor = 0.9
         self.exploration = INITIAL_EXPLORATION
         self.exploration_step = (INITIAL_EXPLORATION - FINAL_EXPLORATION) / EXPLORATION_STEPS
@@ -51,108 +58,44 @@ class DQNAgent:
 
         # replay memory
         self.D = deque(maxlen=self.replay_memory_size)
-
-        # state
-        self.state_num = 4
-
+        
         # variables
         self.current_loss = 0.0
 
+    def init_model(self):
 
-    def init_model(self, model=None):
-        def _create_placeholder(_model):
-            s = tf.placeholder(tf.float32, [None, self.state_num, self.env_size[0], self.env_size[1]])
-            q_values = _model(s)
-            return s, q_values, _model
-
-        if model == None:
-            model = self.create_model()
-            init = False
-        else:
-            init = True
-        # Q Networkの構築
-        self.s, self.q_values, self.q_network = _create_placeholder(copy.copy(model))
-        q_network_weights = self.q_network.trainable_weights
-
-        # Target Networkの構築
-        self.st, self.target_q_values, self.target_network = _create_placeholder(copy.copy(model))
-        target_network_weights = self.target_network.trainable_weights
-
-        # 定期的にTarget Networkを更新するための処理の構築
-        self.update_target_network = [target_network_weights[i].assign(q_network_weights[i]) for i in range(len(target_network_weights))]
-
-        # 誤差関数や最適化のための処理の構築
-        self.a, self.y, self.loss, self.training = self.training_op(q_network_weights)
-
-        # Sessionの構築
-        self.sess = tf.InteractiveSession()
+        self.model = Sequential()
+        self.model.add(InputLayer(input_shape=(1, *self.env_size)))
+        self.model.add(Convolution2D(16, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
+        self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
+        self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
+        self.model.add(Flatten())
+        self.model.add(Dense(128, activation='relu'))
+        self.model.add(Dense(self.n_actions, activation='linear'))
         
-        self.saver = tf.train.Saver(q_network_weights)
-        
-        self.sess.run(tf.global_variables_initializer())
-
-        # Target Networkの初期化
-        self.sess.run(self.update_target_network)
+        self.model.compile(loss=loss_func,
+                           optimizer="rmsprop",
+                           metrics=['accuracy'])
+        self.target_model = copy.copy(self.model)
 
 
     def update_exploration(self, num):
         if self.exploration > FINAL_EXPLORATION:
             self.exploration -= self.exploration_step * num
             if self.exploration < FINAL_EXPLORATION:
-                self.exploration = FINAL_EXPLORATION
-
-
-    def update_target_model(self):
-        self.sess.run(self.update_target_network)
-    
-
-    def create_model(self):
-
-        model = Sequential()
-        print(self.env_size)
-        model.add(InputLayer(input_shape=(self.state_num, *self.env_size)))
-        model.add(Convolution2D(32, 8, 8, border_mode='same', activation='relu', subsample=(4, 4)))
-        model.add(Convolution2D(64, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
-        model.add(Convolution2D(64, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(512, activation='relu'))
-        model.add(Dense(self.n_actions))
-        #self.model.compile(loss='mean_squared_error',
-        #                   optimizer="rmsprop",
-        #                   metrics=['accuracy'])
-        return model
-
-
-    def training_op(self, q_network_weights):
-        a = tf.placeholder(tf.int64, [None])
-        y = tf.placeholder(tf.float32, [None])
-
-        a_one_hot = tf.one_hot(a, self.n_actions, 1.0, 0.0)
-        q_value = tf.reduce_sum(tf.mul(self.q_values, a_one_hot), reduction_indices=1)
-
-        error = tf.abs(y - q_value)
-        quadratic_part = tf.clip_by_value(error, 0.0, 1.0)
-        linear_part = error - quadratic_part
-        loss = tf.reduce_sum(0.5 * tf.square(quadratic_part) + linear_part)
-
-        optimizer = tf.train.RMSPropOptimizer(self.learning_rate, momentum=self.momentum, epsilon=self.min_grad)
-        training = optimizer.minimize(loss, var_list=q_network_weights)
-
-        return a, y, loss, training
-    
+                self.exploration = FINAL_EXPLORATION        
 
     def Q_values(self, states, isTarget=False):
         # Q(state, action) of all actions
-        if not isTarget:
-            #res = self.q_network.predict(np.array([states]))
-            res = self.q_values.eval(feed_dict={self.s: [states]})
-        else:
-            #res = self.target_network.predict(np.array([states]))
-            res = self.target_q_values.eval(feed_dict={self.st: [states]})
+        model = self.target_model if isTarget else self.model
+        res = model.predict(np.array([states]))
+
         return res[0]
 
-    def select_action(self, states, epsilon):
+    def update_target_model(self):
+        self.target_model = clone_model(self.model)
 
+    def select_action(self, states, epsilon):
         if np.random.rand() <= epsilon:
             # random
             return np.random.choice(self.enable_actions)
@@ -160,17 +103,14 @@ class DQNAgent:
             # max_action Q(state, action)
             return self.enable_actions[np.argmax(self.Q_values(states))]
 
-    def store_experience(self, states, action, reward, state_1, terminal):
-        self.D.append((states, action, reward, state_1, terminal))
-        if len(self.D) < self.replay_memory_size:
-            return False
-        else:
-            return True
+    def store_experience(self, states, action, reward, states_1, terminal):
+        self.D.append((states, action, reward, states_1, terminal))
+        return (len(self.D) >= self.replay_memory_size)
 
     def experience_replay(self):
         state_minibatch = []
-        action_minibatch = []
         y_minibatch = []
+        action_minibatch = []
 
         # sample random minibatch
         minibatch_size = min(len(self.D), self.minibatch_size)
@@ -180,61 +120,43 @@ class DQNAgent:
             state_j, action_j, reward_j, state_j_1, terminal = self.D[j]
             action_j_index = self.enable_actions.index(action_j)
 
-            #y_j = self.Q_values(state_j, isTarget=True)
+            y_j = self.Q_values(state_j)
 
-            #if terminal:
-            #    y_j[action_j_index] = reward_j
-            #else:
-            #    # reward_j + gamma * max_action' Q(state', action') alpha(learing rate) = 1
-            #    y_j[action_j_index] = reward_j + self.discount_factor * np.max(self.Q_values(state_j_1))  # NOQA
             if terminal:
-                y_j = reward_j
+                y_j[action_j_index] = reward_j
             else:
-                y_j = reward_j + self.discount_factor * np.max(self.Q_values(state_j_1, isTarget=True))
+                # reward_j + gamma * max_action' Q(state', action') alpha(learing rate) = 1
+                v = np.max(self.Q_values(state_j_1, isTarget=True))
+                y_j[action_j_index] = reward_j + self.discount_factor * v   # NOQA
 
             state_minibatch.append(state_j)
             y_minibatch.append(y_j)
             action_minibatch.append(action_j_index)
 
         # training
-        #self.model.fit(np.array(state_minibatch), np.array(y_minibatch), verbose=0)
-        loss, _ = self.sess.run([self.loss, self.training],
-                                feed_dict={
-                                    self.s: np.array(state_minibatch),
-                                    self.a: np.array(action_minibatch),
-                                    self.y: np.array(y_minibatch)
-                                })
+        self.model.fit(np.array(state_minibatch), np.array(y_minibatch), verbose=0)
 
         # for log
-        #score = self.model.evaluate(np.array(state_minibatch), np.array(y_minibatch), verbose=0)
-        self.current_loss = loss
+        score = self.model.evaluate(np.array(state_minibatch), np.array(y_minibatch), verbose=0)
+        self.current_loss = score[0]
 
-    def load_model2(self, model_path=None):
+    def load_model(self, model_path=None):
 
         yaml_string = open(os.path.join(f_model, model_filename)).read()
-        model = model_from_yaml(yaml_string)
-        model.load_weights(os.path.join(f_model, weights_filename))
-        self.init_model(model)
+        self.model = model_from_yaml(yaml_string)
+        self.model.load_weights(os.path.join(f_model, weights_filename))
 
-        
-    def load_model(self, model_path=None):
-        checkpoint = tf.train.get_checkpoint_state('./models/test')
-        if checkpoint and checkpoint.model_checkpoint_path:
-            self.saver.restore(self.sess, checkpoint.model_checkpoint_path)
-            print('Successfully loaded: ' + checkpoint.model_checkpoint_path)
-        else:
-            print('Training new network...')
-        
+        self.model.compile(loss=loss_func,
+                           optimizer="rmsprop",
+                           metrics=['accuracy'])
 
     def save_model(self, num=None):
-        #yaml_string = self.q_network.to_yaml()
-        #model_name = 'dqn_model{0}.yaml'.format((str(num) if num else ''))
-        #weight_name = 'dqn_model_weights{0}.hdf5'.format((str(num) if num else ''))
-        #open(os.path.join(f_model, model_name), 'w').write(yaml_string)
-        #print('save weights')
-        #self.q_network.save_weights(os.path.join(f_model, weight_name))
-
-        save_path = self.saver.save(self.sess, './models/test', global_step=(num))        
+        yaml_string = self.model.to_yaml()
+        model_name = 'dqn_model{0}.yaml'.format((str(num) if num else ''))
+        weight_name = 'dqn_model_weights{0}.hdf5'.format((str(num) if num else ''))
+        open(os.path.join(f_model, model_name), 'w').write(yaml_string)
+        print('save weights')
+        self.model.save_weights(os.path.join(f_model, weight_name))
 
     def end_session(self):
         KTF.set_session(self.old_session)
