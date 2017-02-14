@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     # parameters
     n_epochs = args.n_epochs
-    state_num = 4
+    state_num = 1
 
     # environment, agent
     env = DQNCave()

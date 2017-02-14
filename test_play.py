@@ -9,7 +9,7 @@ import multiprocessing as multi
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-
+import time
 from cave import DQNCave
 
 
@@ -64,7 +64,10 @@ def onkey(event):
     if event.key == ' ':
         action_t = 1
     elif event.key == 'q':
+        time.sleep(3)
+        plt.close('all')
         sys.exit()
+
 
 def offkey(event):
     global action_t

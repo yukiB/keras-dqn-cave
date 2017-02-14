@@ -97,11 +97,11 @@ class DQNCave:
     def __init__(self, time_limit=True):
         # parameters
         self.name = os.path.splitext(os.path.basename(__file__))[0]
-        self.screen_n_rows = 36
-        self.screen_n_cols = 64
+        self.screen_n_rows = 48
+        self.screen_n_cols = 48
         self.size = (self.screen_n_rows, self.screen_n_cols)
         self.player_size = 1
-        self.player_x = 24
+        self.player_x = 20
         self.player = Player(self.player_x, self.screen_n_rows / 2, self.player_size)
         self.tail = Tail(self.player_x, self.player)
 
