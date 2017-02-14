@@ -7,6 +7,12 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers import InputLayer, Convolution2D
 from keras.models import model_from_yaml
+from keras.optimizers import RMSprop
+try:
+    from keras.optimizers import RMSpropGraves
+except:
+    print('You do not have RMSpropGraves')
+   
 import keras.callbacks
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf
@@ -45,7 +51,7 @@ class DQNAgent:
         self.minibatch_size = 32
         self.env_size = env_size
         self.replay_memory_size = 10000
-        self.learning_rate = 0.000001
+        self.learning_rate = 0.00025
         self.discount_factor = 0.9
         self.use_graves = graves
         self.use_ddqn = ddqn
@@ -76,9 +82,10 @@ class DQNAgent:
         self.model.add(Dense(128, activation='relu'))
         self.model.add(Dense(self.n_actions, activation='linear'))
         
-        optimizer = 'rmspropgraves' if self.use_graves else 'rmsprop'
+        
+        optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
-                           optimizer=optimizer,
+                           optimizer=optimizer(lr=self.learning_rate),
                            metrics=['accuracy'])
 
         self.target_model = copy.copy(self.model)
@@ -153,11 +160,12 @@ class DQNAgent:
         yaml_string = open(os.path.join(f_model, model_filename)).read()
         self.model = model_from_yaml(yaml_string)
         self.model.load_weights(os.path.join(f_model, weights_filename))
-
-        optimizer = 'rmspropgraves' if self.use_graves else 'rmsprop'
+        
+        optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
-                           optimizer=optimizer,
+                           optimizer=optimizer(lr=self.learning_rate),
                            metrics=['accuracy'])
+
 
     def save_model(self, num=None):
         yaml_string = self.model.to_yaml()
