@@ -52,7 +52,7 @@ if __name__ == "__main__":
                 # execute action in environment
             tmpS = [S[(s + 1) * 2 - 1] for s in range(state_num)]
             if frame % 3 == 0:
-                action_t = agent.select_action(S, agent.exploration)
+                action_t = agent.select_action(tmpS, agent.exploration)
                 #action_t = agent.select_action([state_t], agent.exploration)
             env.execute_action(action_t)
 
