@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     # parameters
     n_epochs = args.n_epochs
-    state_num = 1
+    state_num = 4
 
     # environment, agent
     env = DQNCave()
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         Q_max = 0.0
         env.reset()
         state_t_1, reward_t, terminal, past_time = env.observe()
-        S = deque(maxlen=state_num)
+        S = deque(maxlen=state_num * 2)
 
         while not terminal:
             state_t = state_t_1
@@ -50,6 +50,7 @@ if __name__ == "__main__":
             else:
                 S.append(state_t)
                 # execute action in environment
+            tmpS = [S[(s + 1) * 2 - 1] for s in range(state_num)]
             if frame % 3 == 0:
                 action_t = agent.select_action(S, agent.exploration)
                 #action_t = agent.select_action([state_t], agent.exploration)
@@ -60,10 +61,11 @@ if __name__ == "__main__":
 
             # store experience
             start_replay = False
-            if frame % 3 == 0 or reward_t == -1:
+            if frame % 4 == 0 or reward_t == -1:
                 new_S = copy.copy(S)
                 new_S.append(state_t_1)
-                start_replay = agent.store_experience(S, action_t, reward_t, new_S, terminal)
+                tmpnew_S = [new_S[(s + 1) * 2 - 1] for s in range(state_num)]
+                start_replay = agent.store_experience(tmpS, action_t, reward_t, tmpnew_S, terminal)
                 #start_replay = agent.store_experience([state_t], action_t, reward_t, [state_t_1], terminal)
 
             # experience replay
@@ -82,7 +84,7 @@ if __name__ == "__main__":
             frame += 1
             total_frame += 1
             loss += agent.current_loss
-            Q_max += np.max(agent.Q_values(S))
+            Q_max += np.max(agent.Q_values(tmpS))
 
         if start_replay:
             print("EPOCH: {:03d}/{:03d} | SCORE: {:03d} | LOSS: {:.4f} | Q_MAX: {:.4f}".format(
