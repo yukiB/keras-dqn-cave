@@ -23,8 +23,8 @@ FINAL_EXPLORATION = 0.1
 EXPLORATION_STEPS = 1000000
 
 
-def loss_func(y_val, y_pred):
-    error = tf.abs(y_pred - y_val)
+def loss_func(y_true, y_pred):
+    error = tf.abs(y_pred - y_true)
     quadratic_part = tf.clip_by_value(error, 0.0, 1.0)
     linear_part = error - quadratic_part
     loss = tf.reduce_sum(0.5 * tf.square(quadratic_part) + linear_part)
@@ -36,7 +36,7 @@ class DQNAgent:
     Multi Layer Perceptron with Experience Replay
     """
 
-    def __init__(self, enable_actions, environment_name, env_size):
+    def __init__(self, enable_actions, environment_name, env_size, state_num, graves=False, ddqn=False):
         # parameters
         self.name = os.path.splitext(os.path.basename(__file__))[0]
         self.environment_name = environment_name
@@ -44,9 +44,12 @@ class DQNAgent:
         self.n_actions = len(self.enable_actions)
         self.minibatch_size = 32
         self.env_size = env_size
-        self.replay_memory_size = 5000
+        self.replay_memory_size = 10000
         self.learning_rate = 0.000001
         self.discount_factor = 0.9
+        self.use_graves = graves
+        self.use_ddqn = ddqn
+        self.state_num = state_num
         self.exploration = INITIAL_EXPLORATION
         self.exploration_step = (INITIAL_EXPLORATION - FINAL_EXPLORATION) / EXPLORATION_STEPS
         self.model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
@@ -65,7 +68,7 @@ class DQNAgent:
     def init_model(self):
 
         self.model = Sequential()
-        self.model.add(InputLayer(input_shape=(1, *self.env_size)))
+        self.model.add(InputLayer(input_shape=(self.state_num, *self.env_size)))
         self.model.add(Convolution2D(16, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
         self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
         self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
@@ -73,13 +76,11 @@ class DQNAgent:
         self.model.add(Dense(128, activation='relu'))
         self.model.add(Dense(self.n_actions, activation='linear'))
         
+        optimizer = 'rmspropgraves' if self.use_graves else 'rmsprop'
         self.model.compile(loss=loss_func,
-                           optimizer="rmsprop",
+                           optimizer=optimizer,
                            metrics=['accuracy'])
-        #self.model.compile(loss=loss_func,
-        #                   optimizer="rmspropgraves",
-        #                   momentum=0.9,
-        #                   metrics=['accuracy'])
+
         self.target_model = copy.copy(self.model)
 
 
@@ -130,7 +131,10 @@ class DQNAgent:
                 y_j[action_j_index] = reward_j
             else:
                 # reward_j + gamma * max_action' Q(state', action') alpha(learing rate) = 1
-                v = np.max(self.Q_values(state_j_1, isTarget=True))
+                if not self.use_ddqn:
+                    v = np.max(self.Q_values(state_j_1, isTarget=True))
+                else:
+                    v = self.Q_values(state_j_1, isTarget=True)[action_j_index]
                 y_j[action_j_index] = reward_j + self.discount_factor * v   # NOQA
 
             state_minibatch.append(state_j)
@@ -150,8 +154,9 @@ class DQNAgent:
         self.model = model_from_yaml(yaml_string)
         self.model.load_weights(os.path.join(f_model, weights_filename))
 
+        optimizer = 'rmspropgraves' if self.use_graves else 'rmsprop'
         self.model.compile(loss=loss_func,
-                           optimizer="rmsprop",
+                           optimizer=optimizer,
                            metrics=['accuracy'])
 
     def save_model(self, num=None):
