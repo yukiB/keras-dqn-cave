@@ -46,7 +46,7 @@ if __name__ == "__main__":
             state_t = state_t_1
 
             if len(S) == 0:
-                [S.append(state_t) for i in range(state_num)]
+                [S.append(state_t) for i in range(state_num * 2)]
             else:
                 S.append(state_t)
                 # execute action in environment
