@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     # parameters
     n_epochs = args.n_epochs
-    state_num = 4
+    state_num = 5
 
     # environment, agent
     env = DQNCave()
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         if start_replay:
             print("EPOCH: {:03d}/{:03d} | SCORE: {:03d} | LOSS: {:.4f} | Q_MAX: {:.4f}".format(
                 e, n_epochs - 1, past_time, loss / frame, Q_max / frame))
-        if e > 0 and e % 5000 == 0:
+        if e > 0 and e % 1000 == 0:
             agent.save_model(e)
             agent.save_model()
         if start_replay:
