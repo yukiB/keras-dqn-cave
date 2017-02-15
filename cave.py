@@ -139,7 +139,7 @@ class DQNCave:
         [b.update() for b in self.blocks]
 
         self.block_past_time += 1
-        if self.block_interval < self.block_past_time and  self.past_time > 100:
+        if self.block_interval < self.block_past_time and  self.past_time > 50:
             self.block_past_time = 0
             w = self.walls.list[-1]
             y = np.random.randint(int(w.y - w.size/2),

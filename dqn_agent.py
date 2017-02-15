@@ -123,7 +123,7 @@ class DQNAgent:
         if start_replay and score and reward == -1\
            and score > self.high_score:
             self.high_score = score
-            self.maxD = copy.copy(self.D[len(self.D - 150):]) if len(self.D) > 150 else copy.copy(self.D)
+            self.maxD = [self.D[i] for i in range(len(self.D)-150, len(self.D)-10)] if len(self.D) > 150 else copy.copy(self.D)
             self.experience_replay_core(self.maxD, False)
         return start_replay
 

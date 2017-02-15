@@ -14,6 +14,7 @@ from collections import deque
 from cave import DQNCave
 from dqn_agent import DQNAgent
 
+state_num = 5
 
 def init():
     img.set_array(state_t_1)
@@ -36,27 +37,30 @@ def onkey(event):
         sys.exit()
 
 def animate(step):
-    global past_time
+    global past_time, S
     global state_t_1, reward_t, terminal
 
     if terminal:
         env.reset()
-        #S = deque(maxlen=state_num)
+        S = deque(maxlen=state_num * 2)
         sys.stderr.write('\r\033[K')
         print("SCORE: {0:03d}".format(past_time))
     else:
         state_t = state_t_1
         sys.stderr.write('\r\033[K SCORE: {0:03d}'.format(past_time))
-        #if len(S) == 0:
-        #    [S.append(state_t) for i in range(state_num)]
-        #else:
-        #    S.append(state_t)
+
+        if len(S) == 0:
+            [S.append(state_t) for i in range(state_num * 2)]
+        else:
+            S.append(state_t)
+        tmpS = [S[(s + 1) * 2 - 1] for s in range(state_num)]
+        
         
 
         if reward_t == 1:
             n_catched += 1
         # execute action in environment
-        action_t = agent.select_action([state_t], 0.0)
+        action_t = agent.select_action(tmpS, 0.0)
         env.execute_action(action_t)
 
     # observe environment
@@ -83,12 +87,13 @@ if __name__ == "__main__":
 
     # environmet, agent
     env = DQNCave(time_limit=False)
-    agent = DQNAgent(env.enable_actions, env.name, env.size)
+    agent = DQNAgent(env.enable_actions, env.name, env.size, state_num)
     agent.load_model(args.model_path)
 
     # variables
     n_catched = 0
     state_t_1, reward_t, terminal, past_time = env.observe()
+    S = deque(maxlen=state_num * 2)
     # animate
     fig = plt.figure(figsize=(env.screen_n_rows / 10, env.screen_n_cols / 10))
     fig.canvas.set_window_title("{}-{}".format(env.name, agent.name))
