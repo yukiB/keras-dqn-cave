@@ -67,6 +67,8 @@ class DQNAgent:
 
         # replay memory
         self.D = deque(maxlen=self.replay_memory_size)
+        self.MaxD = []
+        self.high_score = 0
         
         # variables
         self.current_loss = 0.0
@@ -115,21 +117,33 @@ class DQNAgent:
             # max_action Q(state, action)
             return self.enable_actions[np.argmax(self.Q_values(states))]
 
-    def store_experience(self, states, action, reward, states_1, terminal):
+    def store_experience(self, states, action, reward, states_1, terminal, score=None):
         self.D.append((states, action, reward, states_1, terminal))
-        return (len(self.D) >= self.replay_memory_size)
+        start_replay = (len(self.D) >= self.replay_memory_size)
+        if start_replay and score and reward == -1\
+           and score > self.high_score:
+            self.high_score = score
+            self.maxD = copy.copy(self.D[len(self.D - 150):]) if len(self.D) > 150 else copy.copy(self.D)
+            self.experience_replay_core(self.maxD, False)
+        return start_replay
 
     def experience_replay(self):
+        self.experience_replay_core(self.D)
+
+    def experience_replay_core(self, D, random=True):
         state_minibatch = []
         y_minibatch = []
         action_minibatch = []
 
         # sample random minibatch
-        minibatch_size = min(len(self.D), self.minibatch_size)
-        minibatch_indexes = np.random.randint(0, len(self.D), minibatch_size)
+        if random:
+            minibatch_size = min(len(D), self.minibatch_size)
+            minibatch_indexes = np.random.randint(0, len(D), minibatch_size)
+        else:
+            minibatch_indexes = range(len(D))
 
         for j in minibatch_indexes:
-            state_j, action_j, reward_j, state_j_1, terminal = self.D[j]
+            state_j, action_j, reward_j, state_j_1, terminal = D[j]
             action_j_index = self.enable_actions.index(action_j)
 
             y_j = self.Q_values(state_j)

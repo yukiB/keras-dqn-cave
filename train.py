@@ -13,6 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model_path")
     parser.add_argument("-l", "--load", dest="load", action="store_true", default=False)
     parser.add_argument("-e", "--epoch-num", dest="n_epochs", default=200, type=int)
+    parser.add_argument("-s", "--save-interval", dest="save_interval", default=1000, type=int)
     parser.add_argument("-g", "--graves", dest="graves", action="store_true", default=False, help='Use RmpropGraves (default: off)')
     parser.add_argument("-d", "--ddqn", dest="ddqn", action="store_true", default=False, help='Use Double DQN (default: off)')
     args = parser.parse_args()
@@ -65,7 +66,8 @@ if __name__ == "__main__":
                 new_S = copy.copy(S)
                 new_S.append(state_t_1)
                 tmpnew_S = [new_S[(s + 1) * 2 - 1] for s in range(state_num)]
-                start_replay = agent.store_experience(tmpS, action_t, reward_t, tmpnew_S, terminal)
+                score = past_time if e > 200 else None
+                start_replay = agent.store_experience(tmpS, action_t, reward_t, tmpnew_S, terminal, score)
                 #start_replay = agent.store_experience([state_t], action_t, reward_t, [state_t_1], terminal)
 
             # experience replay
@@ -89,7 +91,7 @@ if __name__ == "__main__":
         if start_replay:
             print("EPOCH: {:03d}/{:03d} | SCORE: {:03d} | LOSS: {:.4f} | Q_MAX: {:.4f}".format(
                 e, n_epochs - 1, past_time, loss / frame, Q_max / frame))
-        if e > 0 and e % 1000 == 0:
+        if e > 0 and e % args.save_interval == 0:
             agent.save_model(e)
             agent.save_model()
         if start_replay:
