@@ -41,8 +41,8 @@ class Walls:
         if self.update_size > 50:
             self.update_size = 0
             self.now_size -= 0.01
-            if self.now_size < 0.35:
-                self.now_size = 0.35
+            if self.now_size < 0.3:
+                self.now_size = 0.3
         val = random.random()                        #  0    1     -1
         th_up = 0.6 if self.now_slope != 1 else 0.2 # 0.6 >0.15 >0.6
         th_down = 0.4 if self.now_slope != -1 else 0.8 # 0.4 <0.4 <0.85
@@ -101,7 +101,7 @@ class DQNCave:
         self.screen_n_cols = 48
         self.size = (self.screen_n_rows, self.screen_n_cols)
         self.player_size = 1
-        self.player_x = 20
+        self.player_x = 15
         self.player = Player(self.player_x, self.screen_n_rows / 2, self.player_size)
         self.tail = Tail(self.player_x, self.player)
 

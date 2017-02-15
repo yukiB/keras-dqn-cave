@@ -64,7 +64,7 @@ def onkey(event):
     if event.key == ' ':
         action_t = 1
     elif event.key == 'q':
-        time.sleep(3)
+        time.sleep(1)
         plt.close('all')
         sys.exit()
 
@@ -82,6 +82,10 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--save", dest="save", action="store_true")
     parser.set_defaults(save=False)
     args = parser.parse_args()
+    print('----------------------')
+    print('space: moving up')
+    print('q:     exit')
+    print('----------------------')
 
     # environmet, agent
     env = DQNCave(time_limit=False)

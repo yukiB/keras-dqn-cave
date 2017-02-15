@@ -85,6 +85,9 @@ if __name__ == "__main__":
     parser.set_defaults(save=False)
     args = parser.parse_args()
 
+    print('----------------------')
+    print('q: exit')
+    print('----------------------')
     # environmet, agent
     env = DQNCave(time_limit=False)
     agent = DQNAgent(env.enable_actions, env.name, env.size, state_num)
