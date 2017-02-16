@@ -5,7 +5,7 @@ import copy
 import numpy as np
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers import InputLayer, Convolution2D
+from keras.layers import InputLayer, Convolution2D, BatchNormalization
 from keras.models import model_from_yaml
 from keras.optimizers import RMSprop
 try:
@@ -79,8 +79,11 @@ class DQNAgent:
         self.model = Sequential()
         self.model.add(InputLayer(input_shape=(self.state_num, *self.env_size)))
         self.model.add(Convolution2D(16, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
+        self.model.add(BatchNormalization())
         self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
+        self.model.add(BatchNormalization())
         self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
+        self.model.add(BatchNormalization())
         self.model.add(Flatten())
         self.model.add(Dense(128, activation='relu'))
         self.model.add(Dense(self.n_actions, activation='linear'))
