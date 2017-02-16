@@ -68,6 +68,7 @@ class DQNAgent:
         # replay memory
         self.D = deque(maxlen=self.replay_memory_size)
         self.MaxD = []
+        self.deathD = []
         self.high_score = 0
         
         # variables
@@ -120,11 +121,14 @@ class DQNAgent:
     def store_experience(self, states, action, reward, states_1, terminal, score=None):
         self.D.append((states, action, reward, states_1, terminal))
         start_replay = (len(self.D) >= self.replay_memory_size)
-        if start_replay and score and reward == -1\
-           and score > self.high_score:
-            self.high_score = score
-            self.maxD = [self.D[i] for i in range(len(self.D)-150, len(self.D)-10)] if len(self.D) > 150 else copy.copy(self.D)
-            self.experience_replay_core(self.maxD, False)
+        if start_replay and score and reward == -1:
+            if score > 200:
+                self.deathD = [self.D[i] for i in range(len(self.D)-30, len(self.D))]
+                self.experience_replay_core(self.deathD, False)
+            if score > self.high_score:
+                self.high_score = score
+                self.maxD = [self.D[i] for i in range(len(self.D)-150, len(self.D))] if len(self.D) > 150 else copy.copy(self.D)
+                self.experience_replay_core(self.maxD, False)
         return start_replay
 
     def experience_replay(self):
@@ -163,7 +167,10 @@ class DQNAgent:
             action_minibatch.append(action_j_index)
 
         # training
-        self.model.fit(np.array(state_minibatch), np.array(y_minibatch), verbose=0)
+        self.model.fit(np.array(state_minibatch), np.array(y_minibatch),
+                       batch_size=minibatch_size,
+                       nb_epoch=1,
+                       verbose=0)
 
         # for log
         score = self.model.evaluate(np.array(state_minibatch), np.array(y_minibatch), verbose=0)

@@ -34,6 +34,8 @@ def gray2rgb(val):
 def onkey(event):
     global action_t
     if event.key == 'q':
+        time.sleep(1)
+        plt.close('all')
         sys.exit()
 
 def animate(step):
