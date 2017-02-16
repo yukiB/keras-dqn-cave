@@ -5,7 +5,7 @@ import os
 import sys
 from multiprocessing import Pool
 import multiprocessing as multi
-
+import time
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np

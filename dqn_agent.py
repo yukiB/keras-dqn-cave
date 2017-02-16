@@ -26,7 +26,7 @@ weights_filename = 'dqn_model_weights.hdf5'
 
 INITIAL_EXPLORATION = 1.0
 FINAL_EXPLORATION = 0.1
-EXPLORATION_STEPS = 1000000
+EXPLORATION_STEPS = 10000
 
 
 def loss_func(y_true, y_pred):
@@ -51,7 +51,7 @@ class DQNAgent:
         self.minibatch_size = 32
         self.env_size = env_size
         self.replay_memory_size = 10000
-        self.learning_rate = 0.00025
+        self.learning_rate = 0.00015
         self.discount_factor = 0.9
         self.use_graves = graves
         self.use_ddqn = ddqn
@@ -144,6 +144,7 @@ class DQNAgent:
             minibatch_size = min(len(D), self.minibatch_size)
             minibatch_indexes = np.random.randint(0, len(D), minibatch_size)
         else:
+            minibatch_size = len(D)
             minibatch_indexes = range(len(D))
 
         for j in minibatch_indexes:
