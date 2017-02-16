@@ -106,7 +106,7 @@ if __name__ == "__main__":
     fig.canvas.set_window_title("{}-{}".format(env.name, agent.name))
     cid = fig.canvas.mpl_connect('key_press_event', onkey)
     img = plt.imshow(state_t_1, interpolation="none", cmap="gray")
-    ani = animation.FuncAnimation(fig, animate, init_func=init, interval=(1000 / env.frame_rate), blit=True)
+    ani = animation.FuncAnimation(fig, animate, init_func=init, interval=(1000 / env.frame_rate), blit=True, save_count=200)
 
     if args.save:
         # save animation (requires ImageMagick)

@@ -7,6 +7,7 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers import InputLayer, Convolution2D, BatchNormalization
 from keras.models import model_from_yaml
+from keras.layers.extra import TimeDistributedConvolution2D, TimeDistributedMaxPooling2D, TimeDistributedFlatten
 from keras.optimizers import RMSprop
 try:
     from keras.optimizers import RMSpropGraves
@@ -74,20 +75,36 @@ class DQNAgent:
         # variables
         self.current_loss = 0.0
 
+
+    def init_model(self):
+        self.model = Sequential()
+        self.model.add(InputLayer(input_shape=(self.state_num, *self.env_size)))
+        self.model.add(TimeDistributedConvolution2D(16, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
+        self.model.add(TimeDistributedConvolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
+        self.model.add(TimeDistributedConvolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
+        self.model.add(TimeDistributedFlatten())
+        self.model.add(LSTM(256, return_sequences=True))
+        #self.model.add(TimeDistributedDense(128, activation='relu'))
+        self.model.add(TimeDistributedDense(self.n_actions, activation='linear'))
+        
+        optimizer = RMSprop if not self.use_graves else RMSpropGraves
+        self.model.compile(loss=loss_func,
+                           optimizer=optimizer(lr=self.learning_rate),
+                           metrics=['accuracy'])
+
+        self.target_model = copy.copy(self.model)
+        
+
     def init_model(self):
 
         self.model = Sequential()
         self.model.add(InputLayer(input_shape=(self.state_num, *self.env_size)))
         self.model.add(Convolution2D(16, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
-        self.model.add(BatchNormalization())
         self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
-        self.model.add(BatchNormalization())
         self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
-        self.model.add(BatchNormalization())
         self.model.add(Flatten())
         self.model.add(Dense(128, activation='relu'))
         self.model.add(Dense(self.n_actions, activation='linear'))
-        
         
         optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
@@ -125,9 +142,6 @@ class DQNAgent:
         self.D.append((states, action, reward, states_1, terminal))
         start_replay = (len(self.D) >= self.replay_memory_size)
         if start_replay and score and reward == -1:
-            #if score > 200:
-            #    self.deathD = [self.D[i] for i in range(len(self.D)-30, len(self.D))]
-            #    self.experience_replay_core(self.deathD, False)
             if score > self.high_score:
                 self.high_score = score
                 self.maxD = [self.D[i] for i in range(len(self.D)-150, len(self.D))] if len(self.D) > 150 else copy.copy(self.D)
