@@ -20,8 +20,10 @@ def init():
 
 
 def gray2rgb(val):
-    if val == 0.5:
+    if val == 0.4:
         return np.array([0.0, 0.8, 1.0])
+    if val == 0.5:
+        return np.array([0.0, 0.4, 1.0])
     elif val >= 0.8:
         return np.array([1.0, 0.0, 0.0])
     else:

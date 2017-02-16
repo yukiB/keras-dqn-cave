@@ -125,9 +125,9 @@ class DQNAgent:
         self.D.append((states, action, reward, states_1, terminal))
         start_replay = (len(self.D) >= self.replay_memory_size)
         if start_replay and score and reward == -1:
-            if score > 200:
-                self.deathD = [self.D[i] for i in range(len(self.D)-30, len(self.D))]
-                self.experience_replay_core(self.deathD, False)
+            #if score > 200:
+            #    self.deathD = [self.D[i] for i in range(len(self.D)-30, len(self.D))]
+            #    self.experience_replay_core(self.deathD, False)
             if score > self.high_score:
                 self.high_score = score
                 self.maxD = [self.D[i] for i in range(len(self.D)-150, len(self.D))] if len(self.D) > 150 else copy.copy(self.D)

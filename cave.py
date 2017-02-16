@@ -151,7 +151,10 @@ class DQNCave:
         
         # collision detection
         wall = self.walls.list[self.player.x]
-        if (self.player.y <= wall.y - wall.size / 2 or self.player.y >= wall.y + wall.size / 2) or sum(hits) > 0:
+        if (self.player.y <= wall.y - wall.size / 2 or self.player.y >= wall.y + wall.size / 2):
+            self.reward = -0.9
+            self.terminal = True
+        if sum(hits) > 0:
             self.reward = -1
             self.terminal = True
 
@@ -176,8 +179,8 @@ class DQNCave:
             max_y = int(pos_y + w.size/2)
             min_y = (min_y if min_y > 0 else 0)
             max_y = (max_y if max_y < self.screen_n_rows else self.screen_n_rows)
-            self.screen[0:min_y, i] = 0.5
-            self.screen[max_y:self.screen_n_rows, i] = 0.5
+            self.screen[0:min_y, i] = 0.4
+            self.screen[max_y:self.screen_n_rows, i] = 0.4
             
         # reset screen
         diff_y = self.player.y - self.screen_n_rows / 2.0
