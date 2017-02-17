@@ -1,6 +1,6 @@
 # Keras implementation of DQN
 
-![demo](https://raw.githubusercontent.com/wiki/yukiB/tf-dqn-simple/images/demo-cavel.gif)
+![demo](https://raw.githubusercontent.com/wiki/yukiB/tf-dqn-simple/images/demo-cave.gif)
 
 ## Usage
 ### Train
