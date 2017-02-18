@@ -51,7 +51,7 @@ class DRQNAgent:
         self.n_actions = len(self.enable_actions)
         self.minibatch_size = 32
         self.env_size = env_size
-        self.replay_memory_size = 100
+        self.replay_memory_size = 10000
         self.learning_rate = 0.00015
         self.discount_factor = 0.9
         self.use_graves = graves
@@ -85,11 +85,10 @@ class DRQNAgent:
         self.model.add(TimeDistributed(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1))))
         self.model.add(TimeDistributed(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1))))
         self.model.add(TimeDistributed(Flatten()))
-        self.model.add(LSTM(256, return_sequences=True))
+        self.model.add(LSTM(256, return_sequences=False))
         #self.model.add(TimeDistributedDense(128, activation='relu'))
         self.model.add(Dense(self.n_actions, activation='linear'))
         
-        optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
                            optimizer='adadelta',
                            metrics=['accuracy'])
@@ -122,9 +121,7 @@ class DRQNAgent:
             try:
                 result = self.enable_actions[np.argmax(self.Q_values(states))]
             except:
-                print(states)
                 q = self.Q_values(states)
-                print(q)
                 print(np.argmax(q))
                 sys.exit()
             return result
@@ -161,7 +158,6 @@ class DRQNAgent:
             action_j_index = self.enable_actions.index(action_j)
 
             y_j = self.Q_values(state_j)
-            print(y_j)
             if terminal:
                 y_j[action_j_index] = reward_j
             else:
