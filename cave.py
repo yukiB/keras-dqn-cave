@@ -152,7 +152,7 @@ class DQNCave:
         # collision detection
         wall = self.walls.list[self.player.x]
         if (self.player.y <= wall.y - wall.size / 2 or self.player.y >= wall.y + wall.size / 2):
-            self.reward = -0.9
+            self.reward = -1
             self.terminal = True
         if sum(hits) > 0:
             self.reward = -1

@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 from cave import DQNCave
 from dqn_agent import DQNAgent
+from drqn_agent import DRQNAgent
 import copy
 from collections import deque
 
@@ -15,16 +16,18 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--epoch-num", dest="n_epochs", default=200, type=int)
     parser.add_argument("-s", "--save-interval", dest="save_interval", default=1000, type=int)
     parser.add_argument("-g", "--graves", dest="graves", action="store_true", default=False, help='Use RmpropGraves (default: off)')
+    parser.add_argument("-r", "--recurent", dest="drqn", action="store_true", default=False, help='Use DRQN (default: off)')
     parser.add_argument("-d", "--ddqn", dest="ddqn", action="store_true", default=False, help='Use Double DQN (default: off)')
     args = parser.parse_args()
 
     # parameters
     n_epochs = args.n_epochs
-    state_num = 5
+    state_num = 10 if args.drqn else 5
 
     # environment, agent
     env = DQNCave()
-    agent = DQNAgent(env.enable_actions, env.name, env.size, state_num, graves=args.graves, ddqn=args.ddqn)
+    Agent = DRQNAgent if args.drqn else DQNAgent
+    agent = Agent(env.enable_actions, env.name, env.size, state_num, graves=args.graves, ddqn=args.ddqn)
     agent.init_model()
     if args.load:
         agent.load_model(args.model_path)
@@ -47,9 +50,9 @@ if __name__ == "__main__":
             state_t = state_t_1
 
             if len(S) == 0:
-                [S.append(state_t) for i in range(state_num * 2)]
+                [S.append([state_t]) for i in range(state_num * 2)]
             else:
-                S.append(state_t)
+                S.append([state_t])
                 # execute action in environment
             tmpS = [S[(s + 1) * 2 - 1] for s in range(state_num)]
             if frame % 3 == 0:
@@ -64,7 +67,7 @@ if __name__ == "__main__":
             start_replay = False
             if frame % 4 == 0 or reward_t == -1:
                 new_S = copy.copy(S)
-                new_S.append(state_t_1)
+                new_S.append([state_t_1])
                 tmpnew_S = [new_S[(s + 1) * 2 - 1] for s in range(state_num)]
                 score = past_time if e > 200 else None
                 start_replay = agent.store_experience(tmpS, action_t, reward_t, tmpnew_S, terminal, score)

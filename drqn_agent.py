@@ -5,7 +5,8 @@ import copy
 import numpy as np
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers import InputLayer, Convolution2D, BatchNormalization
+from keras.layers import InputLayer, Convolution2D, BatchNormalization, LSTM
+from keras.layers.wrappers import TimeDistributed
 from keras.models import model_from_yaml
 from keras.layers.extra import TimeDistributedConvolution2D, TimeDistributedMaxPooling2D, TimeDistributedFlatten
 from keras.optimizers import RMSprop
@@ -22,8 +23,8 @@ from util import clone_model
 f_log = './log'
 f_model = './models'
 
-model_filename = 'dqn_model.yaml'
-weights_filename = 'dqn_model_weights.hdf5'
+model_filename = 'drqn_model.yaml'
+weights_filename = 'drqn_model_weights.hdf5'
 
 INITIAL_EXPLORATION = 1.0
 FINAL_EXPLORATION = 0.1
@@ -38,7 +39,7 @@ def loss_func(y_true, y_pred):
     return loss
         
 
-class DQNAgent:
+class DRQNAgent:
     """
     Multi Layer Perceptron with Experience Replay
     """
@@ -57,6 +58,8 @@ class DQNAgent:
         self.use_graves = graves
         self.use_ddqn = ddqn
         self.state_num = state_num
+        self.n_sequence = 10
+        self.n_step = 2
         self.exploration = INITIAL_EXPLORATION
         self.exploration_step = (INITIAL_EXPLORATION - FINAL_EXPLORATION) / EXPLORATION_STEPS
         self.model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
@@ -77,19 +80,19 @@ class DQNAgent:
 
 
     def init_model(self):
-
         self.model = Sequential()
-        self.model.add(InputLayer(input_shape=(self.state_num, *self.env_size)))
-        self.model.add(Convolution2D(16, 4, 4, border_mode='same', activation='relu', subsample=(2, 2)))
-        self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
-        self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
-        self.model.add(Flatten())
-        self.model.add(Dense(128, activation='relu'))
-        self.model.add(Dense(self.n_actions, activation='softmax'))
+        self.model.add(InputLayer(input_shape=(self.state_num, 1, *self.env_size)))
+        self.model.add(TimeDistributed(Convolution2D(16, 4, 4, border_mode='same', activation='relu', subsample=(2, 2))))
+        self.model.add(TimeDistributed(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1))))
+        self.model.add(TimeDistributed(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1))))
+        self.model.add(TimeDistributed(Flatten()))
+        self.model.add(LSTM(256, return_sequences=True))
+        #self.model.add(TimeDistributedDense(128, activation='relu'))
+        self.model.add(TimeDistributed(Dense(self.n_actions, activation='softmax')))
         
         optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
-                           optimizer=optimizer(lr=self.learning_rate),
+                           optimizer='adadelta',
                            metrics=['accuracy'])
 
         self.target_model = copy.copy(self.model)
@@ -136,7 +139,8 @@ class DQNAgent:
         state_minibatch = []
         y_minibatch = []
         action_minibatch = []
-
+        print('replay')
+        
         # sample random minibatch
         if random:
             minibatch_size = min(len(D), self.minibatch_size)
@@ -144,6 +148,7 @@ class DQNAgent:
         else:
             minibatch_size = len(D)
             minibatch_indexes = range(len(D))
+
 
         for j in minibatch_indexes:
             state_j, action_j, reward_j, state_j_1, terminal = D[j]
@@ -166,6 +171,7 @@ class DQNAgent:
             action_minibatch.append(action_j_index)
 
         # training
+        print('fit')
         self.model.fit(np.array(state_minibatch), np.array(y_minibatch),
                        batch_size=minibatch_size,
                        nb_epoch=1,
@@ -181,16 +187,15 @@ class DQNAgent:
         self.model = model_from_yaml(yaml_string)
         self.model.load_weights(os.path.join(f_model, weights_filename))
         
-        optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
-                           optimizer=optimizer(lr=self.learning_rate),
+                           optimizer='adadelta',
                            metrics=['accuracy'])
 
 
     def save_model(self, num=None):
         yaml_string = self.model.to_yaml()
-        model_name = 'dqn_model.yaml'
-        weight_name = 'dqn_model_weights{0}.hdf5'.format((str(num) if num else ''))
+        model_name = 'drqn_model.yaml'
+        weight_name = 'drqn_model_weights{0}.hdf5'.format((str(num) if num else ''))
         open(os.path.join(f_model, model_name), 'w').write(yaml_string)
         print('save weights')
         self.model.save_weights(os.path.join(f_model, weight_name))
