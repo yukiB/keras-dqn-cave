@@ -85,7 +85,7 @@ class DQNAgent:
         self.model.add(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1)))
         self.model.add(Flatten())
         self.model.add(Dense(128, activation='relu'))
-        self.model.add(Dense(self.n_actions, activation='softmax'))
+        self.model.add(Dense(self.n_actions, activation='linear'))
         
         optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
