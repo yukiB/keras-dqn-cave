@@ -7,7 +7,6 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers import InputLayer, Convolution2D, BatchNormalization
 from keras.models import model_from_yaml
-from keras.layers.extra import TimeDistributedConvolution2D, TimeDistributedMaxPooling2D, TimeDistributedFlatten
 from keras.optimizers import RMSprop
 try:
     from keras.optimizers import RMSpropGraves
