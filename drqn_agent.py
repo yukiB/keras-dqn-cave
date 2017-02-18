@@ -8,7 +8,6 @@ from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers import InputLayer, Convolution2D, BatchNormalization, LSTM
 from keras.layers.wrappers import TimeDistributed
 from keras.models import model_from_yaml
-from keras.layers.extra import TimeDistributedConvolution2D, TimeDistributedMaxPooling2D, TimeDistributedFlatten
 from keras.optimizers import RMSprop
 try:
     from keras.optimizers import RMSpropGraves
@@ -52,7 +51,7 @@ class DRQNAgent:
         self.n_actions = len(self.enable_actions)
         self.minibatch_size = 32
         self.env_size = env_size
-        self.replay_memory_size = 10000
+        self.replay_memory_size = 100
         self.learning_rate = 0.00015
         self.discount_factor = 0.9
         self.use_graves = graves
@@ -88,7 +87,7 @@ class DRQNAgent:
         self.model.add(TimeDistributed(Flatten()))
         self.model.add(LSTM(256, return_sequences=True))
         #self.model.add(TimeDistributedDense(128, activation='relu'))
-        self.model.add(TimeDistributed(Dense(self.n_actions, activation='softmax')))
+        self.model.add(Dense(self.n_actions, activation='linear'))
         
         optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
@@ -120,7 +119,15 @@ class DRQNAgent:
             return np.random.choice(self.enable_actions)
         else:
             # max_action Q(state, action)
-            return self.enable_actions[np.argmax(self.Q_values(states))]
+            try:
+                result = self.enable_actions[np.argmax(self.Q_values(states))]
+            except:
+                print(states)
+                q = self.Q_values(states)
+                print(q)
+                print(np.argmax(q))
+                sys.exit()
+            return result
 
     def store_experience(self, states, action, reward, states_1, terminal, score=None):
         self.D.append((states, action, reward, states_1, terminal))
@@ -139,7 +146,6 @@ class DRQNAgent:
         state_minibatch = []
         y_minibatch = []
         action_minibatch = []
-        print('replay')
         
         # sample random minibatch
         if random:
@@ -155,7 +161,7 @@ class DRQNAgent:
             action_j_index = self.enable_actions.index(action_j)
 
             y_j = self.Q_values(state_j)
-
+            print(y_j)
             if terminal:
                 y_j[action_j_index] = reward_j
             else:
@@ -171,7 +177,6 @@ class DRQNAgent:
             action_minibatch.append(action_j_index)
 
         # training
-        print('fit')
         self.model.fit(np.array(state_minibatch), np.array(y_minibatch),
                        batch_size=minibatch_size,
                        nb_epoch=1,
