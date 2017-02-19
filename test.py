@@ -13,6 +13,7 @@ from collections import deque
 
 from cave import DQNCave
 from dqn_agent import DQNAgent
+from drqn_agent import DRQNAgent
 
 state_num = 5
 
@@ -41,7 +42,7 @@ def onkey(event):
         sys.exit()
 
 def animate(step):
-    global past_time, S
+    global past_time, S, state_num, drqn
     global state_t_1, reward_t, terminal
 
     if terminal:
@@ -54,9 +55,9 @@ def animate(step):
         sys.stderr.write('\r\033[K SCORE: {0:03d}'.format(past_time))
 
         if len(S) == 0:
-            [S.append(state_t) for i in range(state_num * 2)]
+            [S.append([state_t] if drqn else state_t) for i in range(state_num * 2)]
         else:
-            S.append(state_t)
+            S.append([state_t] if drqn else state_t)
         tmpS = [S[(s + 1) * 2 - 1] for s in range(state_num)]
         
         
@@ -86,6 +87,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model_path")
     parser.add_argument("-s", "--save", dest="save", action="store_true")
+    parser.add_argument("-r", "--rnn", dest="drqn", action="store_true", default=False)
     parser.set_defaults(save=False)
     args = parser.parse_args()
 
@@ -93,10 +95,12 @@ if __name__ == "__main__":
     print('q: exit')
     print('----------------------')
     # environmet, agent
+    drqn = args.drqn
+    state_num = 5
     env = DQNCave(time_limit=False)
-    agent = DQNAgent(env.enable_actions, env.name, env.size, state_num)
+    Agent = DRQNAgent if args.drqn else DQNAgent
+    agent = Agent(env.enable_actions, env.name, env.size, state_num)
     agent.load_model(args.model_path)
-
     # variables
     n_catched = 0
     state_t_1, reward_t, terminal, past_time = env.observe()

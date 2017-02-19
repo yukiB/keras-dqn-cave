@@ -85,7 +85,7 @@ class DRQNAgent:
         self.model.add(TimeDistributed(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1))))
         self.model.add(TimeDistributed(Convolution2D(32, 2, 2, border_mode='same', activation='relu', subsample=(1, 1))))
         self.model.add(TimeDistributed(Flatten()))
-        self.model.add(LSTM(256, return_sequences=False))
+        self.model.add(LSTM(256, return_sequences=False, activation='relu'))
         #self.model.add(TimeDistributedDense(128, activation='relu'))
         self.model.add(Dense(self.n_actions, activation='linear'))
         

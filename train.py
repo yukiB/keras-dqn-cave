@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # parameters
     n_epochs = args.n_epochs
-    state_num = 10 if args.drqn else 5
+    state_num = 5
 
     # environment, agent
     env = DQNCave()
@@ -50,9 +50,9 @@ if __name__ == "__main__":
             state_t = state_t_1
 
             if len(S) == 0:
-                [S.append([state_t]) for i in range(state_num * 2)]
+                [S.append([state_t] if args.drqn else state_t) for i in range(state_num * 2)]
             else:
-                S.append([state_t])
+                S.append([state_t] if args.drqn else state_t)
                 # execute action in environment
             tmpS = [S[(s + 1) * 2 - 1] for s in range(state_num)]
             if frame % 3 == 0:
