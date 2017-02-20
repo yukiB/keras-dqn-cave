@@ -67,7 +67,7 @@ if __name__ == "__main__":
             start_replay = False
             if frame % 4 == 0 or reward_t == -1:
                 new_S = copy.copy(S)
-                new_S.append([state_t_1])
+                new_S.append([state_t_1] if args.drqn else state_t_1)
                 tmpnew_S = [new_S[(s + 1) * 2 - 1] for s in range(state_num)]
                 score = past_time if e > 200 else None
                 start_replay = agent.store_experience(tmpS, action_t, reward_t, tmpnew_S, terminal, score)

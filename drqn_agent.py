@@ -52,7 +52,7 @@ class DRQNAgent:
         self.minibatch_size = 32
         self.env_size = env_size
         self.replay_memory_size = 10000
-        self.learning_rate = 0.00015
+        self.learning_rate = 0.000025
         self.discount_factor = 0.9
         self.use_graves = graves
         self.use_ddqn = ddqn
@@ -89,8 +89,9 @@ class DRQNAgent:
         #self.model.add(TimeDistributedDense(128, activation='relu'))
         self.model.add(Dense(self.n_actions, activation='linear'))
         
+        optimizer = RMSprop if not self.use_graves else RMSpropGraves
         self.model.compile(loss=loss_func,
-                           optimizer='adadelta',
+                           optimizer=optimizer(lr=self.learning_rate),
                            metrics=['accuracy'])
 
         self.target_model = copy.copy(self.model)
@@ -134,6 +135,9 @@ class DRQNAgent:
                 self.high_score = score
                 self.maxD = [self.D[i] for i in range(len(self.D)-150, len(self.D))] if len(self.D) > 150 else copy.copy(self.D)
                 self.experience_replay_core(self.maxD, False)
+            else:
+                D = self.D[-10]
+                self.experience_replay_core(D, False)
         return start_replay
 
     def experience_replay(self):
