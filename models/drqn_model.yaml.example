@@ -2,7 +2,7 @@ class_name: Sequential
 config:
 - class_name: InputLayer
   config:
-    batch_input_shape: !!python/tuple [null, 10, 1, 48, 48]
+    batch_input_shape: !!python/tuple [null, 5, 1, 48, 48]
     input_dtype: float32
     name: input_1
     sparse: false
@@ -86,7 +86,7 @@ config:
   config:
     U_regularizer: null
     W_regularizer: null
-    activation: tanh
+    activation: relu
     b_regularizer: null
     consume_less: cpu
     dropout_U: 0.0
